@@ -12,7 +12,7 @@ public class Message implements Serializable {
     private MessageType type;
     
     public enum MessageType {
-        TEXT, LOGIN, LOGOUT, USER_LIST
+        TEXT, LOGIN, LOGOUT, USER_LIST, REGISTER, LOGIN_FAILED, REGISTER_SUCCESS, REGISTER_FAILED
     }
     
     public Message(String sender, String content, MessageType type) {

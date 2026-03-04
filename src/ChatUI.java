@@ -104,6 +104,8 @@ public class ChatUI extends JFrame {
     
     public void setClient(ChatClient client) {
         this.client = client;
+        // 设置窗口标题显示用户名
+        setTitle("微信聊天 - " + client.getUsername());
     }
     
     // 显示登录对话框
@@ -213,12 +215,15 @@ public class ChatUI extends JFrame {
         loginButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
         final String[] result = {null};
+        final boolean[] isRegister = {false};
+        
         ActionListener loginAction = e -> {
             String username = usernameField.getText().trim();
             if (username.isEmpty()) {
                 JOptionPane.showMessageDialog(dialog, "请输入用户名", "提示", JOptionPane.WARNING_MESSAGE);
             } else {
                 result[0] = username;
+                isRegister[0] = false;
                 dialog.dispose();
             }
         };
@@ -227,22 +232,71 @@ public class ChatUI extends JFrame {
         usernameField.addActionListener(loginAction);
         formPanel.add(loginButton);
         
+        formPanel.add(Box.createVerticalStrut(15));
+        
+        // 注册按钮
+        JButton registerButton = new JButton("注册新用户");
+        registerButton.setFont(new Font("微软雅黑", Font.PLAIN, 14));
+        registerButton.setMaximumSize(new Dimension(300, 45));
+        registerButton.setBackground(new Color(240, 240, 240));
+        registerButton.setForeground(new Color(100, 100, 100));
+        registerButton.setFocusPainted(false);
+        registerButton.setBorderPainted(false);
+        registerButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        registerButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        registerButton.addActionListener(e -> {
+            String username = usernameField.getText().trim();
+            if (username.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "请输入用户名", "提示", JOptionPane.WARNING_MESSAGE);
+            } else {
+                result[0] = username;
+                isRegister[0] = true;
+                dialog.dispose();
+            }
+        });
+        formPanel.add(registerButton);
+        
         mainPanel.add(formPanel);
         dialog.add(mainPanel);
         dialog.setVisible(true);
+        
+        if (result[0] != null && isRegister[0]) {
+            result[0] = "REGISTER:" + result[0];
+        }
         
         return result[0];
     }
     
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            String username = showLoginDialog();
-            if (username == null) {
+            String input = showLoginDialog();
+            if (input == null) {
                 System.exit(0);
             }
             
+            boolean isRegister = input.startsWith("REGISTER:");
+            String username = isRegister ? input.substring(9) : input;
+            
             try {
-                ChatClient client = new ChatClient("localhost", 8888, username);
+                if (isRegister) {
+                    // 处理注册
+                    ChatClient registerClient = new ChatClient("localhost", 8888, username, true);
+                    Thread.sleep(500);
+                    if (!registerClient.isConnected()) {
+                        System.exit(0);
+                        return;
+                    }
+                    // 注册成功，提示用户重新登录
+                    input = showLoginDialog();
+                    if (input == null) {
+                        System.exit(0);
+                        return;
+                    }
+                    username = input;
+                }
+                
+                // 正常登录
+                ChatClient client = new ChatClient("localhost", 8888, username, false);
                 ChatUI ui = new ChatUI();
                 ui.setClient(client);
                 client.setUI(ui);
